@@ -1,0 +1,149 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © MarlosClock
+// first pine script, Top 12 QQQ Tick 
+//@version=5
+indicator('Top12 Tick w/ MACD & BB', shorttitle='Top 12 Tick', overlay=false)
+calc_on_every_tick = true
+closeRoundedToTick = math.round_to_mintick(close)
+time("1440", session.extended) // 1440=60*24 is the number of minutes in a whole day. You may use "0930-1600" as second session parameter
+
+FBclose = request.security('FB', '1', close[0])
+FBopen = request.security('FB', '1', close[1])
+FBtick = FBclose - FBopen
+AAPLclose = request.security('AAPL', '1', close[0])
+AAPLopen = request.security('AAPL', '1', close[1])
+AAPLtick = AAPLclose - AAPLopen
+AMZNclose = request.security('AMZN', '1', close[0])
+AMZNopen = request.security('AMZN', '1', close[1])
+AMZNtick = AMZNclose - AMZNopen
+NFLXclose = request.security('NFLX', '1', close[0])
+NFLXopen = request.security('NFLX', '1', close[1])
+NFLXtick = NFLXclose - NFLXopen
+GOOGclose = request.security('GOOG', '1', close[0])
+GOOGopen = request.security('GOOG', '1', close[1])
+GOOGtick = GOOGclose - GOOGopen
+GOOGLclose = request.security('GOOGL', '1', close[0])
+GOOGLopen = request.security('GOOGL', '1', close[1])
+GOOGLtick = GOOGLclose - GOOGLopen
+MSFTclose = request.security('MSFT', '1', close[0])
+MSFTopen = request.security('MSFT', '1', close[1])
+MSFTtick = MSFTclose - MSFTopen
+TSLAclose = request.security('TSLA', '1', close[0])
+TSLAopen = request.security('TSLA', '1', close[1])
+TSLAtick = TSLAclose - TSLAopen
+NVDAclose = request.security('NVDA', '1', close[0])
+NVDAopen = request.security('NVDA', '1', close[1])
+NVDAtick = NVDAclose - NVDAopen
+ADBEclose = request.security('ADBE', '1', close[0])
+ADBEopen = request.security('ADBE', '1', close[1])
+ADBEtick = ADBEclose - ADBEopen
+AVGOclose = request.security('AVGO', '1', close[0])
+AVGOopen = request.security('AVGO', '1', close[1])
+AVGOtick = AVGOclose - AVGOopen
+CSCOclose = request.security('COST', '1', close[0])//changed to Costco instead of Cisco, but left the codes 
+CSCOopen = request.security('COST', '1', close[1])
+CSCOtick = CSCOclose - CSCOopen
+
+//https://ycharts.com/companies/QQQ/holdings
+//weightings are multiplied by the percentage currently. May need to be updated periodically
+FBw = 3.40 * FBtick
+AAPLw = 12.59 * AAPLtick
+AMZNw = 7.26 * AMZNtick
+NFLXw = 1.16 * NFLXtick
+GOOGw = 3.77 * GOOGtick
+GOOGLw = 3.59 * GOOGLtick
+MSFTw = 9.83* MSFTtick
+TSLAw = 4.85 * TSLAtick
+NVDAw = 3.58 * NVDAtick
+ADBEw = 1.69 * ADBEtick
+AVGOw = 1.86 * AVGOtick
+CSCOw = 2.00 * CSCOtick
+//56% of QQQ total
+
+//TotW = FBw + AAPLw + AMZNw + NFLXw + GOOGw + GOOGLw + MSFTw
+TotW12 = FBw + AAPLw + AMZNw + NFLXw + GOOGw + GOOGLw + MSFTw + TSLAw + NVDAw + ADBEw + AVGOw + CSCOw
+src = TotW12
+TICK = TotW12
+//TICKq = security("TICKQ", "1", close[0] ) //pulling TICKQ data for an idea about plotting the Bottom 88 tick
+
+
+plot(src, title="Top12 Tick Line Plot", color=color.from_gradient(src,-40,40,color.fuchsia,color.teal))
+
+//MACD
+fast_length = input(title="MACD Fast Length", defval=3)
+slow_length = input(title="MACD Slow Length", defval=9)
+signal_length = input.int(title="Signal Smoothing",  minval = 1, maxval = 12, defval = 3)
+sma_source = input.string(title="Oscillator MA Type",  defval="EMA", options=["SMA", "EMA"])
+sma_signal = input.string(title="Signal Line MA Type", defval="EMA", options=["SMA", "EMA"])
+// Plot colors for histogram
+col_grow_above = input(color.rgb(38, 166, 154, 60), "Above   Grow", group="Histogram", inline="Above")
+col_fall_above = input(color.rgb(178, 223, 219, 60), "Fall", group="Histogram", inline="Above")
+col_grow_below = input(color.rgb(255, 205, 210, 60), "Below Grow", group="Histogram", inline="Below")
+col_fall_below = input(color.rgb(255, 82, 82, 60), "Fall", group="Histogram", inline="Below")
+col_grow_abovet= input(color.rgb(38, 166, 154, 80), "Above   Grow", group="Histogram", inline="Above")
+col_fall_abovet= input(color.rgb(178, 223, 219, 80), "Fall", group="Histogram", inline="Above")
+col_grow_belowt= input(color.rgb(255, 205, 210, 80), "Below Grow", group="Histogram", inline="Below")
+col_fall_belowt= input(color.rgb(255, 82, 82, 80), "Fall", group="Histogram", inline="Below")
+
+
+///MACD plots 
+fast_ma = sma_source == "SMA" ? ta.sma(src, fast_length) : ta.ema(src, fast_length)
+slow_ma = sma_source == "SMA" ? ta.sma(src, slow_length) : ta.ema(src, slow_length)
+macd = fast_ma - slow_ma
+signal = sma_signal == "SMA" ? ta.sma(macd, signal_length) : ta.ema(macd, signal_length)
+hist = macd - signal
+plot(hist, title="Histogram", style=plot.style_area, color=(hist>=0 ? (hist[1] < hist ? col_grow_above : col_fall_above) : (hist[1] < hist ? col_grow_below : col_fall_below)))
+plot(src, title="Top12 Tick Area Plot", style=plot.style_area, color=(src>=0 ? (src[1] < src ? col_grow_abovet : col_fall_abovet) : (src[1] < src ? col_grow_belowt : col_fall_belowt)))
+
+//BB
+
+length = input.int(9, "BB Length", minval=2)
+mult = input.float(1.0, minval=0.001, maxval=50, title="BB StdDev")
+basis = ta.sma(src, length)
+dev = mult * ta.stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+offset = input.int(0, "BB Offset", minval = -500, maxval = 500)
+plot(basis, "BB Neutral", color=color.rgb(150,234,215,50) , style=plot.style_stepline,offset = offset)
+plot(upper, "BB Upper", color=color.rgb(255, 255, 255,50), offset = offset)
+plot(lower, "BB Lower", color=color.rgb(255, 255, 255,50), offset = offset)
+plot(signal, title="MACD SMA", color=color.rgb(253,233,104,20), style=plot.style_stepline, offset =offset)
+
+
+
+BBpinch = input.int(title="BB Pinch", defval=35)
+float pinch = BBpinch
+if (upper>0 and lower>0)
+    pinch := upper - lower
+if (upper<0 and lower<0)
+    pinch := math.abs(lower) - math.abs(upper)
+if (upper>0 and lower<0)
+    pinch := upper + math.abs(lower)
+plot(pinch<BBpinch?(upper+lower)/2: na,title="BB Pinch", style=plot.style_linebr,linewidth=3, color=color.white)
+
+// horizontal lines
+pivot1 = input.int(60, "Strong Sell line")
+hline(pivot1,color=color.rgb(255,0,116, 70),linestyle=hline.style_dashed)
+pivot2 = input.int(35, "Sell line")
+hline(pivot2, color=color.rgb(255,113,206, 70),linestyle=hline.style_dashed)
+pivot3 = input.int(25, "Caution line")
+hline(pivot3,"Caution",color=color.rgb(255,191,0, 70),linestyle=hline.style_dotted)
+pivot4 = input.int(15, "+Boxed line")
+hline(pivot4,"+Boxed",color=color.rgb(255, 255, 255, 70),linestyle=hline.style_dotted)
+pivot5 = input.int(7, "+Volatility Squeeze line")
+hline(pivot5,"+Volatility Squeeze line", color=color.rgb(255, 255, 255, 70),linestyle=hline.style_dotted)
+pivot6 = input.int(-7, "-Volatility Squeeze line")
+hline(pivot6,"-Volatility Squeeze line",color=color.rgb(255, 255, 255, 70),linestyle=hline.style_dotted)
+pivot7 =input.int(-15, "-Boxed line")
+hline(pivot7, "-Boxed",color=color.rgb(255, 255, 255, 70),linestyle=hline.style_dotted)
+pivot8 = input.int(-25, "-Caution line")
+hline(pivot8,"-Caution",color=color.rgb(255,191,0, 70),linestyle=hline.style_dotted)
+pivot9 = input.int(-35, "Buy line")
+hline(pivot9,"Buy",color=color.rgb(186,255,201, 70),linestyle=hline.style_dashed)
+pivot10 = input.int(-60, "Strong Buy line")
+hline(pivot10,"Strong Buy line",color=color.rgb(0,255,159, 70),linestyle=hline.style_dashed)    
+
+
+
+
+    
