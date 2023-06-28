@@ -1,0 +1,77 @@
+//@version=5
+indicator('Chart Mojo Neutral Cloud + Opening Range', overlay=true)
+t = time('1440', session.extended)  // 1440=60*24 is the number of minutes in a whole day. You may use "0930-1600" as second session parameter
+//plot(t, style=linebr) // debug
+is_first = na(t[1]) and not na(t) or t[1] < t
+plotshape(is_first, color=color.new(color.red, 0), style=shape.arrowdown)
+
+day_high = float(na)
+day_low = float(na)
+
+
+if is_first and barstate.isnew
+    day_high := high
+    day_low := low
+    day_low
+else
+    day_high := day_high[1]
+    day_low := day_low[1]
+    day_low
+
+if high > day_high
+    day_high := high
+    day_high
+
+if low < day_low
+    day_low := low
+    day_low
+
+neutral = (day_high+day_low)/2
+low_mid = ((neutral-day_low)/2)+day_low
+high_mid = ((day_high-neutral)/2)+neutral
+low8 =  ((neutral-day_low)/4)+day_low
+high8 = ((day_high-((day_high-neutral)/4)))
+hmid8 = ((day_high-(3*((day_high-neutral)/4))))
+lmid8 = (3*((neutral-day_low)/4))+day_low
+
+plot(high_mid, color=color.new(color.yellow, 0), style=plot.style_circles)
+plot(low_mid, color=color.new(color.yellow, 0), style=plot.style_circles)
+plot(high8, color=color.new(color.orange, 0), style=plot.style_circles)
+plot(low8, color=color.new(color.orange, 0), style=plot.style_circles)
+plot(hmid8, color=color.new(color.orange, 0), style=plot.style_circles)
+plot(lmid8, color=color.new(color.orange, 0), style=plot.style_circles)
+plot(day_high, color=color.new(color.lime, 0))
+plot(day_low, color=color.new(color.red, 0))
+m = plot((day_low + day_high) / 2, color=color.new(color.yellow, 0))
+
+v = plot(ta.vwap(close), title='VWAP', style=plot.style_circles)
+fill(m, v, color.new(color.red, 80))
+//
+up30on = input(false, title='30 Minute Opening Range High')
+down30on = input(false, title='30 Minute Opening Range Low')
+up1on = input(true, title='1 Minute Opening Range High')
+down1on = input(true, title='1 Minute Opening Range Low')
+is_newbar(res) =>
+    ta.change(time(res)) != 0
+adopt(r, s) =>
+    request.security(syminfo.tickerid, r, s)
+
+high_range = ta.valuewhen(is_newbar('D'), high, 0)
+low_range = ta.valuewhen(is_newbar('D'), low, 0)
+
+high_rangeL = ta.valuewhen(is_newbar('D'), high, 0)
+low_rangeL = ta.valuewhen(is_newbar('D'), low, 0)
+
+adopt__1 = adopt('1', high_range)
+up = plot(up1on ? adopt__1 : na, color=color.new(color.lime, 0), style=plot.style_circles, linewidth=1)
+adopt__2 = adopt('1', low_range)
+down = plot(down1on ? adopt__2 : na, color=color.new(#DC143C, 0), style=plot.style_circles, linewidth=1)
+
+trans30 = up30on ? 75 : 100
+fill(up, down, color.rgb(255,255,255,40))
+
+adopt__3 = adopt('30', high_rangeL)
+up30 = plot(up30on ? adopt__3 : na, color=color.new(#7FFF00, 0), style=plot.style_circles, linewidth=1)
+adopt__4 = adopt('30', low_rangeL)
+down30 = plot(down30on ? adopt__4 : na, color=color.new(color.red, 0), style=plot.style_circles, linewidth=1)
+
